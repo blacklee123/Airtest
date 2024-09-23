@@ -18,7 +18,7 @@ from airtest.core.assertions import (assert_exists, assert_not_exists, assert_eq
                                         assert_is_none, assert_is_not_none, assert_in, assert_not_in,
                                         assert_is_instance, assert_not_is_instance
                                      )
-
+from .device import Device
 
 """
 Device Setup APIs
@@ -75,7 +75,7 @@ def connect_device(uri):
     return dev
 
 
-def device():
+def device() -> Device:
     """
     Return the current active device.
 

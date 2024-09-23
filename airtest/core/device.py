@@ -1,22 +1,18 @@
-# encoding=utf-8
-from six import with_metaclass
-
-
 class MetaDevice(type):
 
     REGISTRY = {}
 
-    def __new__(meta, name, bases, class_dict):
-        cls = type.__new__(meta, name, bases, class_dict)
-        meta.REGISTRY[name] = cls
+    def __new__(cls, name, bases, class_dict):
+        cls = super().__new__(cls, name, bases, class_dict)
+        cls.REGISTRY[name] = cls
         return cls
 
 
-class Device(with_metaclass(MetaDevice, object)):
-    """base class for test device"""
+class Device(metaclass=MetaDevice):
+    """Base class for test device"""
 
     def __init__(self):
-        super(Device, self).__init__()
+        super().__init__()
 
     def to_json(self):
         try:

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from airtest.cli.parser import get_parser
+from typing import Optional, List
 
-
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     ap = get_parser()
     args = ap.parse_args(argv)
+
     if args.action == "info":
         from airtest.cli.info import get_script_info
         print(get_script_info(args.script))

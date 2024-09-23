@@ -27,6 +27,7 @@ from airtest.cli.info import get_script_info
 from airtest.utils.logger import get_logger
 from airtest.utils.snippet import parse_device_uri
 from six import PY3
+import argparse
 
 LOGGING = get_logger(__name__)
 DEFAULT_LOG_DIR = "log"
@@ -547,7 +548,7 @@ def simple_report(filepath, logpath=True, logfile=None, output=HTML_FILE):
     rpt.report(HTML_TPL, output_file=output)
 
 
-def get_parger(ap):
+def get_parger(ap: argparse.ArgumentParser) -> argparse.ArgumentParser:
     ap.add_argument("script", help="script filepath")
     ap.add_argument("--outfile", help="output html filepath, default to be log.html", default=HTML_FILE)
     ap.add_argument("--static_root", help="static files root dir")
