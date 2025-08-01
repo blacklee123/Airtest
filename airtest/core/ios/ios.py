@@ -606,8 +606,9 @@ class IOS(Device):
         - ``iproxy $port 8100 $udid``
     """
 
-    def __init__(self, addr=DEFAULT_ADDR, cap_method=CAP_METHOD.MJPEG, mjpeg_port=None, udid=None, name=None,
-                 serialno=None, wda_bundle_id=None):
+    def __init__(self, udid=None, host=None, wda_port=None, addr=DEFAULT_ADDR, cap_method=CAP_METHOD.MJPEG, mjpeg_port=None,  name=None,
+                 serialno=None, wda_bundle_id=None, **kwargs):
+        print(f"udid={udid} host={host} addr={addr}, cap_method={cap_method}, mjpeg_port={mjpeg_port}, , name={name}, serialno={serialno}, wda_bundle_id={wda_bundle_id} kwargs={kwargs}")
         super().__init__()
 
         # If none or empty, use default addr.
@@ -631,24 +632,13 @@ class IOS(Device):
         # The three connection modes are determined by the addr.
         # e.g., connect remote device http://10.227.70.247:20042
         # e.g., connect local device http://127.0.0.1:8100 or http://localhost:8100 or http+usbmux://00008020-001270842E88002E
-        self.udid = udid or name or serialno
+        self.udid = udid
         self._wda_bundle_id = wda_bundle_id
-        parsed = urlparse(self.addr).netloc.split(":")[0] if ":" in urlparse(self.addr).netloc else urlparse(
-            self.addr).netloc
-        if parsed not in ["localhost", "127.0.0.1"] and "." in parsed:
-            # Connect remote device via url.
-            self.is_local_device = False
-            self.driver = wda.Client(self.addr)
-        else:
-            # Connect local device via url.
-            self.is_local_device = True
-            if parsed in ["localhost", "127.0.0.1"]:
-                if not udid:
-                    udid = self._get_default_device()
-                self.udid = udid
-            else:
-                self.udid = parsed
-            self.driver = wda.USBClient(udid=self.udid, port=8100, wda_bundle_id=self.wda_bundle_id)
+        self.host = host[0]
+        self.port = host[1]
+        self.wda_port = wda_port
+        self.is_local_device = False
+        self.driver = wda.Client(f"http://{self.host}:{self.wda_port}")
         # Record device's width and height.
         self._size = {'width': None, 'height': None}
         self._current_orientation = None
