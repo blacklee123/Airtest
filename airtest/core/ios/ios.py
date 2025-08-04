@@ -610,6 +610,7 @@ class IOS(Device):
     def __init__(self, udid=None, host=None, wda_port=None, addr=DEFAULT_ADDR, cap_method=CAP_METHOD.MJPEG, mjpeg_port=None,  name=None,
                  serialno=None, wda_bundle_id=None, **kwargs):
         super().__init__()
+        self.ip = host[0]
         self.new_driver = NewIosDriver(url=f"http://{host[0]}:{host[1]}", udid=udid)
         # If none or empty, use default addr.
         self.addr = addr or DEFAULT_ADDR
@@ -703,24 +704,24 @@ class IOS(Device):
             self._wda_bundle_id = self._get_default_wda_bundle_id()
         return self._wda_bundle_id
 
-    @property
-    def ip(self):
-        """Returns the IP address of the host connected to the iOS phone.
+    # @property
+    # def ip(self):
+    #     """Returns the IP address of the host connected to the iOS phone.
 
-        It is not the IP address of the iOS phone.
-        If you want to get the IP address of the phone, you can access the interface `get_ip_address`.
-        For example: when the device is connected via http://localhost:8100, return localhost.
-        If it is a remote device http://192.168.xx.xx:8100, it returns the IP address of 192.168.xx.xx.
+    #     It is not the IP address of the iOS phone.
+    #     If you want to get the IP address of the phone, you can access the interface `get_ip_address`.
+    #     For example: when the device is connected via http://localhost:8100, return localhost.
+    #     If it is a remote device http://192.168.xx.xx:8100, it returns the IP address of 192.168.xx.xx.
 
-        Returns:
-            IP.
-        """
-        match = re.search(IP_PATTERN, self.addr)
-        if match:
-            ip = match.group(0)
-        else:
-            ip = 'localhost'
-        return ip
+    #     Returns:
+    #         IP.
+    #     """
+    #     match = re.search(IP_PATTERN, self.addr)
+    #     if match:
+    #         ip = match.group(0)
+    #     else:
+    #         ip = 'localhost'
+    #     return ip
 
     @property
     def uuid(self):
@@ -1456,7 +1457,7 @@ class IOS(Device):
             LocalDeviceError: If the device is remote.
 
         """
-        return self.instruct_helper.setup_proxy(int(port))
+        return self.new_driver.retrieve_forwards(int(port)), port
 
     def ps(self):
         """Get the process list of the device.
