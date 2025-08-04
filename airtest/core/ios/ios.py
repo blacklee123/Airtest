@@ -33,6 +33,7 @@ from airtest.core.settings import Settings as ST
 from airtest.aircv.screen_recorder import ScreenRecorder, resize_by_max, get_max_size
 from airtest.core.error import LocalDeviceError, AirtestError
 from airtest.core.helper import logwrap
+from .new_driver import NewIosDriver
 
 LOGGING = get_logger(__name__)
 
@@ -608,9 +609,8 @@ class IOS(Device):
 
     def __init__(self, udid=None, host=None, wda_port=None, addr=DEFAULT_ADDR, cap_method=CAP_METHOD.MJPEG, mjpeg_port=None,  name=None,
                  serialno=None, wda_bundle_id=None, **kwargs):
-        print(f"udid={udid} host={host} addr={addr}, cap_method={cap_method}, mjpeg_port={mjpeg_port}, , name={name}, serialno={serialno}, wda_bundle_id={wda_bundle_id} kwargs={kwargs}")
         super().__init__()
-
+        self.new_driver = NewIosDriver(url=f"http://{host[0]}:{host[1]}", udid=udid)
         # If none or empty, use default addr.
         self.addr = addr or DEFAULT_ADDR
 
@@ -638,7 +638,7 @@ class IOS(Device):
         self.port = host[1]
         self.wda_port = wda_port
         self.is_local_device = False
-        self.driver = wda.Client(f"http://{self.host}:{self.wda_port}")
+        self.driver = wda.Client(f"http://{self.host}:{self.new_driver.retrieve_forwards(8100)}")
         # Record device's width and height.
         self._size = {'width': None, 'height': None}
         self._current_orientation = None
@@ -649,7 +649,7 @@ class IOS(Device):
         self._device_info = {}
         self.instruct_helper = InstructHelper(self.device_info['uuid'])
         self.mjpegcap = MJpegcap(self.instruct_helper, ori_function=lambda: self.display_info,
-                                 ip=self.ip, port=mjpeg_port)
+                                 ip=self.ip, port=self.new_driver.retrieve_forwards(9100))
         # Start up RotationWatcher with default session.
         self.rotation_watcher = RotationWatcher(self)
         self._register_rotation_watcher()
@@ -1150,10 +1150,11 @@ class IOS(Device):
         Raises:
             LocalDeviceError: If the device is remote.
         """
-        if not self.is_local_device:
-            raise LocalDeviceError()
-        return TIDevice.install_app(self.udid, file_or_url)
-
+        try:
+            return self.new_driver.install_app(file_or_url)
+        except Exception:
+            raise AirtestError("Failed to install apps")
+        
     def uninstall_app(self, bundle_id):
         """Uninstall app from the device.
 
@@ -1220,9 +1221,7 @@ class IOS(Device):
         Raises:
             LocalDeviceError: If the device is remote.
         """
-        if not self.is_local_device:
-            raise LocalDeviceError()
-        return TIDevice.list_app(self.udid, app_type=type)
+        return self.new_driver.list_app()
 
     def app_state(self, bundle_id):
         """ Get app state and ruturn.
@@ -1695,9 +1694,10 @@ class IOS(Device):
             >>> dev.pull("/Documents/test.key", "test_rename.key", "com.apple.Keynote")
 
         """
-        if not self.is_local_device:
-            raise LocalDeviceError()
-        TIDevice.pull(self.udid, remote_path, local_path, bundle_id=bundle_id, timeout=timeout)
+        if bundle_id:
+            return self.new_driver.app_pull(remote_path, local_path, bundle_id, timeout=timeout)
+        else:
+            return self.new_driver.device_pull(remote_path, local_path, timeout=timeout)
 
     @logwrap
     def ls(self, remote_path, bundle_id=None):
