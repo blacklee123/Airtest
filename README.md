@@ -10,7 +10,7 @@
 
 ## 使用方式
 1. 其他api和airtest兼容
-2. iOS设备链接格式发生变，格式为iOS://{启动go-ios-android的设备IP}:15037/{udid} 如iOS://192.168.2.111:15037/00008101-00126CCE2610FFFF
+2. iOS设备链接格式发生变化，格式为: `iOS://{启动go-ios-android的设备IP}:15037/{udid}` 如: `iOS://192.168.2.111:15037/00008101-00126CCE2610FFFF`
 
 # Airtest &middot; [![Build status](https://travis-ci.org/AirtestProject/Airtest.svg?branch=master)](https://travis-ci.org/AirtestProject/Airtest)
 
