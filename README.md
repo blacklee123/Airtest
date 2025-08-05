@@ -1,6 +1,6 @@
 # airtest-plus
 ## 和原版有什么不同
-1. 重新实现了ios Device类，结合https://github.com/blacklee123/go-ios-android使用可实现对iOS17以上的设备支持\及iOS设备的远程调用支持
+1. 重新实现了ios Device类，结合 https://github.com/blacklee123/go-ios-android 使用可实现对iOS17以上的设备支持、iOS设备的远程调用支持
 2. 增加了部分api
     - list_app
 3. 兼容python3.12、3.13
