@@ -33,6 +33,7 @@ from airtest.core.settings import Settings as ST
 from airtest.aircv.screen_recorder import ScreenRecorder, resize_by_max, get_max_size
 from airtest.core.error import LocalDeviceError, AirtestError
 from airtest.core.helper import logwrap
+from .new_driver import NewIosDriver
 
 LOGGING = get_logger(__name__)
 
@@ -606,10 +607,11 @@ class IOS(Device):
         - ``iproxy $port 8100 $udid``
     """
 
-    def __init__(self, addr=DEFAULT_ADDR, cap_method=CAP_METHOD.MJPEG, mjpeg_port=None, udid=None, name=None,
-                 serialno=None, wda_bundle_id=None):
+    def __init__(self, udid=None, host=None, wda_port=None, addr=DEFAULT_ADDR, cap_method=CAP_METHOD.MJPEG, mjpeg_port=None,  name=None,
+                 serialno=None, wda_bundle_id=None, **kwargs):
         super().__init__()
-
+        self.ip = host[0]
+        self.new_driver = NewIosDriver(url=f"http://{host[0]}:{host[1]}", udid=udid)
         # If none or empty, use default addr.
         self.addr = addr or DEFAULT_ADDR
 
@@ -631,24 +633,13 @@ class IOS(Device):
         # The three connection modes are determined by the addr.
         # e.g., connect remote device http://10.227.70.247:20042
         # e.g., connect local device http://127.0.0.1:8100 or http://localhost:8100 or http+usbmux://00008020-001270842E88002E
-        self.udid = udid or name or serialno
+        self.udid = udid
         self._wda_bundle_id = wda_bundle_id
-        parsed = urlparse(self.addr).netloc.split(":")[0] if ":" in urlparse(self.addr).netloc else urlparse(
-            self.addr).netloc
-        if parsed not in ["localhost", "127.0.0.1"] and "." in parsed:
-            # Connect remote device via url.
-            self.is_local_device = False
-            self.driver = wda.Client(self.addr)
-        else:
-            # Connect local device via url.
-            self.is_local_device = True
-            if parsed in ["localhost", "127.0.0.1"]:
-                if not udid:
-                    udid = self._get_default_device()
-                self.udid = udid
-            else:
-                self.udid = parsed
-            self.driver = wda.USBClient(udid=self.udid, port=8100, wda_bundle_id=self.wda_bundle_id)
+        self.host = host[0]
+        self.port = host[1]
+        self.wda_port = wda_port
+        self.is_local_device = False
+        self.driver = wda.Client(f"http://{self.host}:{self.new_driver.retrieve_forwards(8100)}")
         # Record device's width and height.
         self._size = {'width': None, 'height': None}
         self._current_orientation = None
@@ -659,7 +650,7 @@ class IOS(Device):
         self._device_info = {}
         self.instruct_helper = InstructHelper(self.device_info['uuid'])
         self.mjpegcap = MJpegcap(self.instruct_helper, ori_function=lambda: self.display_info,
-                                 ip=self.ip, port=mjpeg_port)
+                                 ip=self.ip, port=self.new_driver.retrieve_forwards(9100))
         # Start up RotationWatcher with default session.
         self.rotation_watcher = RotationWatcher(self)
         self._register_rotation_watcher()
@@ -713,24 +704,24 @@ class IOS(Device):
             self._wda_bundle_id = self._get_default_wda_bundle_id()
         return self._wda_bundle_id
 
-    @property
-    def ip(self):
-        """Returns the IP address of the host connected to the iOS phone.
+    # @property
+    # def ip(self):
+    #     """Returns the IP address of the host connected to the iOS phone.
 
-        It is not the IP address of the iOS phone.
-        If you want to get the IP address of the phone, you can access the interface `get_ip_address`.
-        For example: when the device is connected via http://localhost:8100, return localhost.
-        If it is a remote device http://192.168.xx.xx:8100, it returns the IP address of 192.168.xx.xx.
+    #     It is not the IP address of the iOS phone.
+    #     If you want to get the IP address of the phone, you can access the interface `get_ip_address`.
+    #     For example: when the device is connected via http://localhost:8100, return localhost.
+    #     If it is a remote device http://192.168.xx.xx:8100, it returns the IP address of 192.168.xx.xx.
 
-        Returns:
-            IP.
-        """
-        match = re.search(IP_PATTERN, self.addr)
-        if match:
-            ip = match.group(0)
-        else:
-            ip = 'localhost'
-        return ip
+    #     Returns:
+    #         IP.
+    #     """
+    #     match = re.search(IP_PATTERN, self.addr)
+    #     if match:
+    #         ip = match.group(0)
+    #     else:
+    #         ip = 'localhost'
+    #     return ip
 
     @property
     def uuid(self):
@@ -1160,10 +1151,11 @@ class IOS(Device):
         Raises:
             LocalDeviceError: If the device is remote.
         """
-        if not self.is_local_device:
-            raise LocalDeviceError()
-        return TIDevice.install_app(self.udid, file_or_url)
-
+        try:
+            return self.new_driver.install_app(file_or_url)
+        except Exception:
+            raise AirtestError("Failed to install apps")
+        
     def uninstall_app(self, bundle_id):
         """Uninstall app from the device.
 
@@ -1230,9 +1222,7 @@ class IOS(Device):
         Raises:
             LocalDeviceError: If the device is remote.
         """
-        if not self.is_local_device:
-            raise LocalDeviceError()
-        return TIDevice.list_app(self.udid, app_type=type)
+        return self.new_driver.list_app()
 
     def app_state(self, bundle_id):
         """ Get app state and ruturn.
@@ -1467,7 +1457,7 @@ class IOS(Device):
             LocalDeviceError: If the device is remote.
 
         """
-        return self.instruct_helper.setup_proxy(int(port))
+        return self.new_driver.retrieve_forwards(int(port)), port
 
     def ps(self):
         """Get the process list of the device.
@@ -1705,9 +1695,10 @@ class IOS(Device):
             >>> dev.pull("/Documents/test.key", "test_rename.key", "com.apple.Keynote")
 
         """
-        if not self.is_local_device:
-            raise LocalDeviceError()
-        TIDevice.pull(self.udid, remote_path, local_path, bundle_id=bundle_id, timeout=timeout)
+        if bundle_id:
+            return self.new_driver.app_pull(remote_path, local_path, bundle_id, timeout=timeout)
+        else:
+            return self.new_driver.device_pull(remote_path, local_path, timeout=timeout)
 
     @logwrap
     def ls(self, remote_path, bundle_id=None):

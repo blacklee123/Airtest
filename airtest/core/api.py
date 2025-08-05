@@ -188,6 +188,22 @@ def start_app(package, activity=None):
     """
     G.DEVICE.start_app(package, activity)
 
+@logwrap
+def list_app(type="user"):
+    """
+    Start the target application on device
+
+    :param type: type of app, e.g. "user", "system", "all"
+    :return:
+            list: A list of tuples containing the bundle ID, display name,
+                and version of the installed applications.
+            e.g. [('com.apple.mobilesafari', 'Safari', '8.0'), ...]
+    :platforms: Android, iOS
+    :Example:
+        >>> list_app()
+    """
+    return G.DEVICE.list_app(type=type)
+
 
 @logwrap
 def stop_app(package):

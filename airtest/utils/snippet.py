@@ -183,9 +183,10 @@ def escape_special_char(string):
         string (str): The input string, e.g. 'testing !@#$%^&*()_+'
 
     Returns:
-        str: The string with special characters escaped.  e.g. 'testing \!\@\#\$\%\^\&\*\(\)_\+'
+        str: The string with special characters escaped.  e.g. r'testing \!\@\#\$\%\^\&\*\(\)_\+'
     """
-    return re.sub(r'([!@#\$%\^&\*\(\)_\+\\|;:"\'<>\?\{\}\[\]#\~\^ ])', r'\\\1', string)
+    # 简化后的正则表达式：只转义在字符类中有特殊含义的字符（\ 和 ]）
+    return re.sub(r'([!@#$%^&*()_+\\|;:\'"<>?{}[\]~#^ -])', r'\\\1', string)
 
 
 def get_absolute_coordinate(coord, dev):
