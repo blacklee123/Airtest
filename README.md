@@ -1,3 +1,17 @@
+# airtest-plus
+## 和原版有什么不同
+1. 重新实现了ios Device类，结合https://github.com/blacklee123/go-ios-android使用可实现对iOS17以上的设备支持\及iOS设备的远程调用支持
+2. 增加了部分api
+    - list_app
+3. 兼容python3.12、3.13
+
+## 安装
+`pip install git+https://github.com/blacklee123/airtest-plus`
+
+## 使用方式
+1. 其他api和airtest兼容
+2. iOS设备链接格式发生变，格式为iOS://{启动go-ios-android的设备IP}:15037/{udid} 如iOS://192.168.2.111:15037/00008101-00126CCE2610FFFF
+
 # Airtest &middot; [![Build status](https://travis-ci.org/AirtestProject/Airtest.svg?branch=master)](https://travis-ci.org/AirtestProject/Airtest)
 
 **Cross-Platform UI Automation Framework for Games and Apps**
